@@ -1,10 +1,11 @@
 package com.softpaw.systems.resp
 
+import com.softpaw.systems.resp.RespProtocol.deserialize
+import com.softpaw.systems.resp.RespProtocol.serialize
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
 import io.ktor.utils.io.*
-import kotlinx.coroutines.runBlocking
 
 class RespParserTest : FunSpec({
 
@@ -12,7 +13,7 @@ class RespParserTest : FunSpec({
         val input = "+OK\r\n"
         val channel = ByteReadChannel(input.encodeToByteArray())
 
-        val result = parseRespValue(channel)
+        val result = deserialize(channel)
 
         result shouldBe RespSimpleString("OK")
     }
@@ -21,7 +22,7 @@ class RespParserTest : FunSpec({
         val input = "-ERR unknown command 'asdf'\r\n"
         val channel = ByteReadChannel(input.encodeToByteArray())
 
-        val result = parseRespValue(channel)
+        val result = deserialize(channel)
 
         result shouldBe RespSimpleError("ERR unknown command 'asdf'")
     }
@@ -30,7 +31,7 @@ class RespParserTest : FunSpec({
         val input = ":1000\r\n"
         val channel = ByteReadChannel(input.encodeToByteArray())
 
-        val result = parseRespValue(channel)
+        val result = deserialize(channel)
 
         result shouldBe RespInteger(1000)
     }
@@ -39,7 +40,7 @@ class RespParserTest : FunSpec({
         val input = ":-1000\r\n"
         val channel = ByteReadChannel(input.encodeToByteArray())
 
-        val result = parseRespValue(channel)
+        val result = deserialize(channel)
 
         result shouldBe RespInteger(-1000)
     }
@@ -48,7 +49,7 @@ class RespParserTest : FunSpec({
         val input = "$5\r\nhello\r\n"
         val channel = ByteReadChannel(input.encodeToByteArray())
 
-        val result = parseRespValue(channel)
+        val result = deserialize(channel)
 
         result shouldBe RespBulkString("hello")
     }
@@ -57,7 +58,7 @@ class RespParserTest : FunSpec({
         val input = "$0\r\n\r\n"
         val channel = ByteReadChannel(input.encodeToByteArray())
 
-        val result = parseRespValue(channel)
+        val result = deserialize(channel)
 
         result shouldBe RespBulkString("")
     }
@@ -66,7 +67,7 @@ class RespParserTest : FunSpec({
         val input = "$11\r\nhello\nworld\r\n"
         val channel = ByteReadChannel(input.encodeToByteArray())
 
-        val result = parseRespValue(channel)
+        val result = deserialize(channel)
 
         result shouldBe RespBulkString("hello\nworld")
     }
@@ -75,46 +76,52 @@ class RespParserTest : FunSpec({
         val input = "*2\r\n$5\r\nhello\r\n$5\r\nworld\r\n"
         val channel = ByteReadChannel(input.encodeToByteArray())
 
-        val result = parseRespValue(channel)
+        val result = deserialize(channel)
 
-        result shouldBe RespArray(listOf(
-            RespBulkString("hello"),
-            RespBulkString("world")
-        ))
+        result shouldBe RespArray(
+            listOf(
+                RespBulkString("hello"),
+                RespBulkString("world")
+            )
+        )
     }
 
     test("parse array - LLEN command") {
         val input = "*2\r\n$4\r\nLLEN\r\n$6\r\nmylist\r\n"
         val channel = ByteReadChannel(input.encodeToByteArray())
 
-        val result = parseRespValue(channel)
+        val result = deserialize(channel)
 
-        result shouldBe RespArray(listOf(
-            RespBulkString("LLEN"),
-            RespBulkString("mylist")
-        ))
+        result shouldBe RespArray(
+            listOf(
+                RespBulkString("LLEN"),
+                RespBulkString("mylist")
+            )
+        )
     }
 
     test("parse array - mixed types") {
         val input = "*5\r\n:1\r\n$5\r\nhello\r\n+OK\r\n-ERR\r\n#t\r\n"
         val channel = ByteReadChannel(input.encodeToByteArray())
 
-        val result = parseRespValue(channel)
+        val result = deserialize(channel)
 
-        result shouldBe RespArray(listOf(
-            RespInteger(1),
-            RespBulkString("hello"),
-            RespSimpleString("OK"),
-            RespSimpleError("ERR"),
-            RespBoolean(true)
-        ))
+        result shouldBe RespArray(
+            listOf(
+                RespInteger(1),
+                RespBulkString("hello"),
+                RespSimpleString("OK"),
+                RespSimpleError("ERR"),
+                RespBoolean(true)
+            )
+        )
     }
 
     test("parse array - empty") {
         val input = "*0\r\n"
         val channel = ByteReadChannel(input.encodeToByteArray())
 
-        val result = parseRespValue(channel)
+        val result = deserialize(channel)
 
         result shouldBe RespArray(emptyList())
     }
@@ -123,9 +130,9 @@ class RespParserTest : FunSpec({
         val input = "$-1\r\n"
         val channel = ByteReadChannel(input.encodeToByteArray())
 
-        val result = parseRespValue(channel)
+        val result = deserialize(channel)
 
-        result shouldBe RespNull()
+        result shouldBe RespNull
     }
 
     test("throw on bulk string length mismatch - data too short") {
@@ -133,7 +140,7 @@ class RespParserTest : FunSpec({
         val channel = ByteReadChannel(input.encodeToByteArray())
 
         shouldThrow<Exception> {
-            parseRespValue(channel)
+            deserialize(channel)
         }
     }
 
@@ -142,7 +149,7 @@ class RespParserTest : FunSpec({
         val channel = ByteReadChannel(input.encodeToByteArray())
 
         shouldThrow<RuntimeException> {
-            parseRespValue(channel)
+            deserialize(channel)
         }
     }
 
@@ -150,16 +157,16 @@ class RespParserTest : FunSpec({
         val input = "_\r\n"
         val channel = ByteReadChannel(input.encodeToByteArray())
 
-        val result = parseRespValue(channel)
+        val result = deserialize(channel)
 
-        result shouldBe RespNull()
+        result shouldBe RespNull
     }
 
     test("parse boolean - true") {
         val input = "#t\r\n"
         val channel = ByteReadChannel(input.encodeToByteArray())
 
-        val result = parseRespValue(channel)
+        val result = deserialize(channel)
 
         result shouldBe RespBoolean(true)
     }
@@ -168,7 +175,7 @@ class RespParserTest : FunSpec({
         val input = "#f\r\n"
         val channel = ByteReadChannel(input.encodeToByteArray())
 
-        val result = parseRespValue(channel)
+        val result = deserialize(channel)
 
         result shouldBe RespBoolean(false)
     }
@@ -177,7 +184,7 @@ class RespParserTest : FunSpec({
         val input = ",1.23\r\n"
         val channel = ByteReadChannel(input.encodeToByteArray())
 
-        val result = parseRespValue(channel)
+        val result = deserialize(channel)
 
         result shouldBe RespDouble(1.23)
     }
@@ -186,7 +193,7 @@ class RespParserTest : FunSpec({
         val input = ",-1.23\r\n"
         val channel = ByteReadChannel(input.encodeToByteArray())
 
-        val result = parseRespValue(channel)
+        val result = deserialize(channel)
 
         result shouldBe RespDouble(-1.23)
     }
@@ -195,7 +202,7 @@ class RespParserTest : FunSpec({
         val input = ",inf\r\n"
         val channel = ByteReadChannel(input.encodeToByteArray())
 
-        val result = parseRespValue(channel)
+        val result = deserialize(channel)
 
         result shouldBe RespDouble(Double.POSITIVE_INFINITY)
     }
@@ -204,7 +211,7 @@ class RespParserTest : FunSpec({
         val input = ",-inf\r\n"
         val channel = ByteReadChannel(input.encodeToByteArray())
 
-        val result = parseRespValue(channel)
+        val result = deserialize(channel)
 
         result shouldBe RespDouble(Double.NEGATIVE_INFINITY)
     }
@@ -213,7 +220,7 @@ class RespParserTest : FunSpec({
         val input = ",nan\r\n"
         val channel = ByteReadChannel(input.encodeToByteArray())
 
-        val result = parseRespValue(channel)
+        val result = deserialize(channel)
 
         result shouldBe RespDouble(Double.NaN)
     }
@@ -223,7 +230,7 @@ class RespParserTest : FunSpec({
         val channel = ByteReadChannel(input.encodeToByteArray())
 
         shouldThrow<RuntimeException> {
-            parseRespValue(channel)
+            deserialize(channel)
         }
     }
 
@@ -232,8 +239,37 @@ class RespParserTest : FunSpec({
         val channel = ByteReadChannel(input.encodeToByteArray())
 
         shouldThrow<RuntimeException> {
-            parseRespValue(channel)
+            deserialize(channel)
         }
+    }
+
+    test("serialize and deserialize all implemented types in array") {
+        val original = RespArray(
+            listOf(
+                RespSimpleString("OK"),
+                RespSimpleError("ERR something went wrong"),
+                RespInteger(42),
+                RespInteger(-100),
+                RespBulkString("hello world"),
+                RespBulkString(""),
+                RespNull,
+                RespBoolean(true),
+                RespBoolean(false),
+                RespArray(
+                    listOf(
+                        RespBulkString("nested"),
+                        RespInteger(123)
+                    )
+                ),
+                RespArray(emptyList())
+            )
+        )
+
+        val serialized = serialize(original)
+        val channel = ByteReadChannel(serialized.encodeToByteArray())
+        val deserialized = deserialize(channel)
+
+        deserialized shouldBe original
     }
 
 })

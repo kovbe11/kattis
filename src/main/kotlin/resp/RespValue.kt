@@ -1,8 +1,5 @@
 package com.softpaw.systems.resp
 
-import kotlin.collections.Map
-import kotlin.collections.Set
-
 sealed class RespValue<T> {
     abstract val value: T
     abstract val firstByte: Byte
@@ -46,17 +43,21 @@ data class RespArray(override val value: List<RespValue<*>>) : RespValue<List<Re
     }
 
     override val firstByte: Byte get() = FIRST_BYTE
+    operator fun get(index: Int): RespValue<*> = value[index]
+    operator fun iterator() = value.iterator()
+
+    fun firstOrNull(): RespValue<*>? = value.firstOrNull()
+    val size: Int get() = value.size
 }
 
-data class RespNull(override val value: Unit = Unit) : RespValue<Unit>() {
-    companion object {
-        const val FIRST_BYTE: Byte = '_'.code.toByte()
-    }
+object RespNull : RespValue<Unit>() {
+    const val FIRST_BYTE: Byte = '_'.code.toByte()
 
+    override val value: Unit get() = Unit
     override val firstByte: Byte get() = FIRST_BYTE
 }
 
-data class RespBoolean(override val value: kotlin.Boolean) : RespValue<kotlin.Boolean>() {
+data class RespBoolean(override val value: Boolean) : RespValue<Boolean>() {
     companion object {
         const val FIRST_BYTE: Byte = '#'.code.toByte()
     }
@@ -64,7 +65,7 @@ data class RespBoolean(override val value: kotlin.Boolean) : RespValue<kotlin.Bo
     override val firstByte: Byte get() = FIRST_BYTE
 }
 
-data class RespDouble(override val value: kotlin.Double) : RespValue<kotlin.Double>() {
+data class RespDouble(override val value: Double) : RespValue<Double>() {
     companion object {
         const val FIRST_BYTE: Byte = ','.code.toByte()
     }
