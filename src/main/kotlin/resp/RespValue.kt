@@ -45,9 +45,17 @@ data class RespArray(override val value: List<RespValue<*>>) : RespValue<List<Re
     override val firstByte: Byte get() = FIRST_BYTE
     operator fun get(index: Int): RespValue<*> = value[index]
     operator fun iterator() = value.iterator()
+    val size: Int get() = value.size
 
     fun firstOrNull(): RespValue<*>? = value.firstOrNull()
-    val size: Int get() = value.size
+    fun tailOrNull(): List<RespValue<*>>? {
+        return when (value.size) {
+            0, 1 -> null
+            else -> value.subList(1, value.size)
+        }
+    }
+
+    fun tail(): List<RespValue<*>> = tailOrNull() ?: emptyList()
 }
 
 object RespNull : RespValue<Unit>() {

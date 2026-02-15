@@ -19,7 +19,9 @@ class KattisCommandDispatcher(keyValueStore: KeyValueStore) {
         PingCommand::class to PingCommandHandler,
         EchoCommand::class to EchoCommandHandler,
         SetCommand::class to SetCommandHandler(keyValueStore),
-        GetCommand::class to GetCommandHandler(keyValueStore)
+        GetCommand::class to GetCommandHandler(keyValueStore),
+        DelCommand::class to DelCommandHandler(keyValueStore),
+        ExistsCommand::class to ExistsCommandHandler(keyValueStore)
     )
 
     suspend fun execute(command: KattisCommand): Either<RespSimpleError, RespValue<*>> {

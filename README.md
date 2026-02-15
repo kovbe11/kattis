@@ -29,6 +29,11 @@ We are building a "Distributed Log" that looks like Redis on the outside.
 * Support basic commands: `PING`, `SET`, `GET`.
 * **Goal:** Pass the `redis-benchmark` test with a single node.
 
+### CURRENTLY HERE:
+
+We have a working TCP server that can handle `PING`, `SET`, `GET`, `DEL`, `EXISTS`, commands, and it passes the
+`redis-benchmark` test for these commands at 49k rps.
+
 ### Phase 2: The Storage Layer
 * Implement a Write-Ahead Log (WAL).
 * When a `SET` command comes in, write it to a file on disk immediately.

@@ -140,4 +140,78 @@ class KattisCommandResolvingTest : FunSpec({
         command.isLeft() shouldBe true
         command.leftOrNull() shouldBe RespSimpleError("ERR wrong number of arguments for 'GET' command")
     }
+
+    test("resolve DEL command with single key") {
+        val respArray = RespArray(listOf(RespBulkString("DEL"), RespBulkString("key")))
+        val command = KattisCommand.resolve(respArray)
+
+        command.isRight() shouldBe true
+        command.getOrNull() shouldBe DelCommand(listOf(RespBulkString("key")))
+    }
+
+    test("resolve DEL command with multiple keys") {
+        val respArray = RespArray(
+            listOf(
+                RespBulkString("DEL"),
+                RespBulkString("key1"),
+                RespBulkString("key2"),
+                RespBulkString("key3")
+            )
+        )
+        val command = KattisCommand.resolve(respArray)
+
+        command.isRight() shouldBe true
+        command.getOrNull() shouldBe DelCommand(
+            listOf(
+                RespBulkString("key1"),
+                RespBulkString("key2"),
+                RespBulkString("key3")
+            )
+        )
+    }
+
+    test("DEL with no arguments returns error") {
+        val respArray = RespArray(listOf(RespBulkString("DEL")))
+        val command = KattisCommand.resolve(respArray)
+
+        command.isLeft() shouldBe true
+        command.leftOrNull() shouldBe RespSimpleError("ERR wrong number of arguments for 'DEL' command")
+    }
+
+    test("resolve EXISTS command with single key") {
+        val respArray = RespArray(listOf(RespBulkString("EXISTS"), RespBulkString("key")))
+        val command = KattisCommand.resolve(respArray)
+
+        command.isRight() shouldBe true
+        command.getOrNull() shouldBe ExistsCommand(listOf(RespBulkString("key")))
+    }
+
+    test("resolve EXISTS command with multiple keys") {
+        val respArray = RespArray(
+            listOf(
+                RespBulkString("EXISTS"),
+                RespBulkString("key1"),
+                RespBulkString("key2"),
+                RespBulkString("key3")
+            )
+        )
+        val command = KattisCommand.resolve(respArray)
+
+        command.isRight() shouldBe true
+        command.getOrNull() shouldBe ExistsCommand(
+            listOf(
+                RespBulkString("key1"),
+                RespBulkString("key2"),
+                RespBulkString("key3")
+            )
+        )
+    }
+
+    test("EXISTS with no arguments returns error") {
+        val respArray = RespArray(listOf(RespBulkString("EXISTS")))
+        val command = KattisCommand.resolve(respArray)
+
+        command.isLeft() shouldBe true
+        command.leftOrNull() shouldBe RespSimpleError("ERR wrong number of arguments for 'EXISTS' command")
+    }
 })

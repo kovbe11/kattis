@@ -10,7 +10,9 @@ enum class KattisCommandType {
     PING,
     ECHO,
     SET,
-    GET;
+    GET,
+    DEL,
+    EXISTS;
 
     companion object {
         private val nameToTypeMap = entries.associateBy { it.name }
@@ -30,6 +32,8 @@ interface KattisCommandFactory {
             KattisCommandType.ECHO to EchoCommandFactory,
             KattisCommandType.SET to SetCommandFactory,
             KattisCommandType.GET to GetCommandFactory,
+            KattisCommandType.DEL to DelCommandFactory,
+            KattisCommandType.EXISTS to ExistsCommandFactory,
         )
 
         fun createCommand(commandType: KattisCommandType, args: RespArray): Either<RespSimpleError, KattisCommand> {
