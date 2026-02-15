@@ -19,6 +19,11 @@ object GetCommandFactory : KattisCommandFactory {
 
 class GetCommandHandler(val store: KeyValueGetPort) : KattisCommandHandler<GetCommand> {
     override suspend fun handle(command: GetCommand): Either<RespSimpleError, RespValue<*>> {
-        return store.get(command.key)?.let { Either.Right(it) } ?: Either.Right(RespNull)
+        val value = store.get(command.key) ?: return Either.Right(RespNull)
+        return when (value) {
+            is RespBulkString -> Either.Right(value)
+            is RespInteger -> Either.Right(RespBulkString(value.value.toString()))
+            else -> Either.Left(RespSimpleError("ERR unsupported operation"))
+        }
     }
 }

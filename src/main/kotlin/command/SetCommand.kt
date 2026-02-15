@@ -4,13 +4,13 @@ import arrow.core.Either
 import com.softpaw.systems.resp.*
 import com.softpaw.systems.store.KeyValueSetPort
 
-data class SetCommand(val key: String, val value: RespValue<*>) : KattisCommand
+data class SetCommand(val key: String, val value: RespBulkString) : KattisCommand
 
 object SetCommandFactory : KattisCommandFactory {
     override fun fromArgs(args: RespArray): Either<RespSimpleError, KattisCommand> {
         return when {
-            args.size == 3 && args[1] is RespBulkString -> {
-                Either.Right(SetCommand((args[1] as RespBulkString).value, args[2]))
+            args.size == 3 && args[1] is RespBulkString && args[2] is RespBulkString -> {
+                Either.Right(SetCommand((args[1] as RespBulkString).value, args[2] as RespBulkString))
             }
 
             else -> Either.Left(RespSimpleError("ERR wrong number of arguments for 'SET' command"))

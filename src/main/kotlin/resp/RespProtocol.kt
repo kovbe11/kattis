@@ -23,12 +23,12 @@ object RespProtocol {
         RespPush.FIRST_BYTE to ::handlePush
     )
 
+    // this does not support inline commands. I do not comprehend why anyone came up with that idea.
     suspend fun deserialize(byteReadChannel: ByteReadChannel): RespValue<*> {
         val firstByte = byteReadChannel.readByte()
         val handler = registry[firstByte] ?: handleUnimplemented()
         return handler(byteReadChannel)
     }
-
 
     suspend fun handleSimpleString(byteReadChannel: ByteReadChannel): RespSimpleString {
         val line = byteReadChannel.readUTF8Line()
@@ -73,11 +73,10 @@ object RespProtocol {
         val length = readLong(byteReadChannel, "Array length", max = 11)
         if (length < 0) return RespArray(emptyList())
 
-        val elements = mutableListOf<RespValue<*>>()
-        repeat(length.toInt()) {
-            elements.add(deserialize(byteReadChannel))
+        val elements = Array(length.toInt()) { _ ->
+            deserialize(byteReadChannel)
         }
-        return RespArray(elements)
+        return RespArray(elements.asList())
     }
 
     suspend fun handleNull(byteReadChannel: ByteReadChannel): RespNull {
