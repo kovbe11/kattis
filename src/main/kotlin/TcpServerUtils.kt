@@ -2,6 +2,7 @@ package com.softpaw.systems
 
 import arrow.core.Either
 import arrow.core.flatMap
+import arrow.core.getOrElse
 import arrow.core.merge
 import com.softpaw.systems.command.KattisCommand
 import com.softpaw.systems.command.KattisCommandDispatcher
@@ -16,6 +17,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.supervisorScope
+import kotlinx.io.EOFException
 
 
 suspend fun startTCPServer(dispatcher: KattisCommandDispatcher, port: Int = 6379) {
@@ -59,7 +61,15 @@ suspend fun handleConnection(
     dispatcher: KattisCommandDispatcher
 ) = coroutineScope {
     while (!inputChannel.isClosedForRead) {
-        val respValue = deserialize(inputChannel)
+        val respValue = Either.catch { (deserialize(inputChannel)) }
+            .getOrElse { e ->
+                if (e is EOFException || inputChannel.isClosedForRead) {
+                    println("Client disconnected")
+                    return@coroutineScope
+                }
+                throw e
+            }
+
         if (respValue !is RespArray) {
             val errorResponse = serialize(RespSimpleError("ERR expected array"))
             outputChannel.writeStringUtf8(errorResponse)
