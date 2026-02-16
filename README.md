@@ -98,7 +98,7 @@ do not use ping, it does not support inline commands
 - [x] Key-value operations: `SET`, `GET`, `DEL`, `EXISTS`
 - [x] Pass redis-benchmark for SET/GET
 - [x] TTL support: `EXPIRE`, `TTL`, `PERSIST`
-- [ ] Proactive background expiration
+- [x] Proactive background expiration
 - [ ] Support type specific commands like:
     - [ ] `INCR`, `DECR` etc.
     - [ ] `LPUSH`, `LLEN`, `LPOP` etc.

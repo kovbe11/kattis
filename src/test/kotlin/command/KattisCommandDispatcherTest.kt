@@ -9,13 +9,13 @@ import java.time.Instant
 class KattisCommandDispatcherTest : FunSpec({
 
     val mockStore = object : KeyValueStore {
-        override suspend fun get(key: String): RespValue<*>? = null
-        override suspend fun set(key: String, value: RespValue<*>) {}
-        override suspend fun delete(key: String): Boolean = false
-        override suspend fun exists(key: String): Boolean = false
-        override suspend fun clear() {}
-        override suspend fun expire(key: String, at: Instant?): Boolean = false
-        override suspend fun ttl(key: String): Pair<Instant?, Boolean> = Pair(null, false)
+        override fun get(key: String): RespValue<*>? = null
+        override fun set(key: String, value: RespValue<*>) {}
+        override fun delete(key: String): Boolean = false
+        override fun exists(key: String): Boolean = false
+        override fun clear() {}
+        override fun expire(key: String, at: Instant?): Boolean = false
+        override fun ttl(key: String): Pair<Instant?, Boolean> = Pair(null, false)
     }
     val dispatcher = KattisCommandDispatcher(mockStore)
 
