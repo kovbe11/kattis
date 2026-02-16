@@ -1,71 +1,117 @@
-# Distributed Redis (Kotlin Edition)
+# Kattis - Redis-Compatible Server in Kotlin
 
-## What is this?
-This is a project to practice building distributed systems. It is a custom implementation of a Redis server, built from *almost* scratch.
+A Redis-compatible server implementation built from scratch in Kotlin, designed as a learning project for building
+distributed systems. The goal is to implement core Redis features and eventually build a distributed engine similar to
+systems like Kafka.
 
-The goal is not to copy every Redis feature. The goal is to build the **distributed engine** (the hard part) that powers systems like Kafka,
-and have acceptable results on the standard Redis benchmark tool. The main focus is on Redis Streams (the `XADD` command), which is a log-like data structure that can be used for messaging, similar to Kafka topics.
-The original idea was to reimplement Kafka, but yeah, Redis Streams is close enough and has a nice Redis protocol to work with for validation and benchmark.
+The server implements the RESP (Redis Serialization Protocol) and supports the following commands:
 
-## The Main Idea
-We are building a "Distributed Log" that looks like Redis on the outside.
+**Basic Commands:**
 
-1.  **The Interface:** It speaks the Redis protocol. This means you can use the standard `redis-cli` and `redis-benchmark` tools to test it.
-2.  **The Engine:** It uses **Raft Consensus** internally. This means multiple nodes (servers) talk to each other to agree on data. If one node dies, the others take over without losing data.
-3.  **The Storage:** It writes data to a file on disk (Append-Only Log), just like Kafka does.
+- `PING` - Test server connectivity
+- `ECHO` - Echo back a message
 
-## Technology Stack
-* **Language:** Kotlin (JVM)
-* **Concurrency:** Kotlin Coroutines (for handling many connections at once).
-* **Networking:** Ktor Network (for raw TCP sockets).
-* **Functional Logic:** Arrow-kt (to handle errors and complex state safely).
-* **Testing:** Kotest.
+**Key-Value Operations:**
 
-## Project Roadmap
+- `SET key value` - Set a key to a string value
+- `GET key` - Get the value of a key
+- `DEL key [key ...]` - Delete one or more keys
+- `EXISTS key [key ...]` - Check if keys exist
 
-### Phase 1: The Network Layer
-* Create a TCP server that listens on port `6379`.
-* Parse the Redis text protocol (RESP).
-* Support basic commands: `PING`, `SET`, `GET`.
-* **Goal:** Pass the `redis-benchmark` test with a single node.
+**Expiration:**
 
-### CURRENTLY HERE:
+- `EXPIRE key seconds` - Set a timeout on a key
+- `TTL key` - Get the time to live for a key
+- `PERSIST key` - Remove the expiration from a key
 
-We have a working TCP server that can handle `PING`, `SET`, `GET`, `DEL`, `EXISTS`, commands, and it passes the
-`redis-benchmark` test for these commands at 49k rps.
+**Database:**
 
-### Phase 2: The Storage Layer
-* Implement a Write-Ahead Log (WAL).
-* When a `SET` command comes in, write it to a file on disk immediately.
-* Implement `XADD` (Streams) to act like a Kafka topic.
+- `FLUSHDB` - Remove all keys from the current database
 
-### Phase 3: The Distributed Layer (The "Lock")
-* Run 3 separate instances of the server.
-* Implement **Leader Election**: The nodes vote for a leader.
-* Implement **Replication**: The leader sends data to followers. The command is only "done" when the majority of nodes have it.
-* **Goal:** Kill the leader process while the benchmark is running, and see the system recover automatically.
+**Performance:** Achieves ~49k requests/second on redis-benchmark for SET/GET operations.
 
-## How to Run
+## Architecture
 
-### Prerequisites
-* Java 21+
-* Redis (only for the `redis-benchmark` tool)
+### Technology Stack
+
+- **Language:** Kotlin (JVM 21)
+- **Concurrency:** Kotlin Coroutines for async I/O
+- **Networking:** Ktor Network for raw TCP sockets
+- **Functional Programming:** Arrow-kt for error handling
+- **Testing:** Kotest
+
+## Getting Started
 
 ### Running the Server
+
 ```bash
 # Start the server on port 6379
 ./gradlew run
 ```
 
-### Running the Benchmark
+The server will start listening on `localhost:6379`.
 
-Open a terminal and run the standard Redis benchmark tool against our local server.
+### Testing with redis-cli
 
 ```bash
-# Test 1: Simple Set/Get performance
-redis-benchmark -t set,get -q
+# Connect to the server
+redis-cli -p 6379
 
-# Test 2: Distributed Log performance (The Kafka-style test)
-# Simulates 50 clients pushing data at once
-redis-benchmark -t xadd -c 50 -q
+# Try some commands
+127.0.0.1:6379> PING
+PONG
+127.0.0.1:6379> SET mykey "Hello"
+OK
+127.0.0.1:6379> GET mykey
+"Hello"
+127.0.0.1:6379> EXPIRE mykey 10
+(integer) 1
+127.0.0.1:6379> TTL mykey
+(integer) 10
 ```
+
+### Running Benchmarks
+
+Test performance using the standard Redis benchmark tool:
+
+```bash
+# Basic SET/GET performance
+redis-benchmark -t set,get -q
+```
+
+do not use ping, it does not support inline commands
+
+### Running Tests
+
+```bash
+# Run all tests
+./gradlew test
+```
+
+## Roadmap
+
+### Phase 1: Basics
+
+- [x] Create TCP server listening on port 6379
+- [x] Implement RESP protocol parser and serializer
+- [x] Basic commands: `PING`, `ECHO`
+- [x] Key-value operations: `SET`, `GET`, `DEL`, `EXISTS`
+- [x] Pass redis-benchmark for SET/GET
+- [x] TTL support: `EXPIRE`, `TTL`, `PERSIST`
+- [ ] Proactive background expiration
+- [ ] Support type specific commands like:
+    - [ ] `INCR`, `DECR` etc.
+    - [ ] `LPUSH`, `LLEN`, `LPOP` etc.
+    - maybe others, like set and hash operations.
+- [ ] Try optimizing for performance - what can we learn?
+- [ ] Implement disaster recovery from file
+
+### Phase 2: Advanced
+
+- [ ] Implement Pub/Sub `PUBLISH`, `SUBSCRIBE`, `UNSUBSCRIBE`, `PUBSUB CHANNELS`
+- [ ] Implement Redis Streams (`XADD`, `XREAD`) for Kafka-like messaging
+
+### Phase 3: Distributed Layer (Future)
+
+- [ ] Implement Raft consensus algorithm for leader election across multiple nodes
+- [ ] **Goal:** Zero-downtime operation during leader failures
