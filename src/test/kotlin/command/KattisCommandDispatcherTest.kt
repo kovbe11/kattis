@@ -4,6 +4,7 @@ import com.softpaw.systems.resp.*
 import com.softpaw.systems.store.KeyValueStore
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
+import java.time.Instant
 
 class KattisCommandDispatcherTest : FunSpec({
 
@@ -13,6 +14,8 @@ class KattisCommandDispatcherTest : FunSpec({
         override suspend fun delete(key: String): Boolean = false
         override suspend fun exists(key: String): Boolean = false
         override suspend fun clear() {}
+        override suspend fun expire(key: String, at: Instant?): Boolean = false
+        override suspend fun ttl(key: String): Pair<Instant?, Boolean> = Pair(null, false)
     }
     val dispatcher = KattisCommandDispatcher(mockStore)
 
@@ -83,6 +86,33 @@ class KattisCommandDispatcherTest : FunSpec({
 
         result.isRight() shouldBe true
         result.getOrNull() shouldBe RespSimpleString("OK")
+    }
+
+    test("dispatch EXPIRE command returns 0 for non-existent key") {
+        val command = ExpireCommand("key", 10)
+
+        val result = dispatcher.execute(command)
+
+        result.isRight() shouldBe true
+        result.getOrNull() shouldBe RespInteger(0)
+    }
+
+    test("dispatch TTL command returns -2 for non-existent key") {
+        val command = TtlCommand("key")
+
+        val result = dispatcher.execute(command)
+
+        result.isRight() shouldBe true
+        result.getOrNull() shouldBe RespInteger(-2)
+    }
+
+    test("dispatch PERSIST command returns 0 for non-existent key") {
+        val command = PersistCommand("key")
+
+        val result = dispatcher.execute(command)
+
+        result.isRight() shouldBe true
+        result.getOrNull() shouldBe RespInteger(0)
     }
 
 })

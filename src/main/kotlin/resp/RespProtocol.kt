@@ -56,7 +56,8 @@ object RespProtocol {
     suspend fun handleBulkString(byteReadChannel: ByteReadChannel): RespValue<*> {
         val length = readLong(byteReadChannel, "BulkString length", max = 11)
         if (length < 0) return RespNull
-        // todo: what if there is no length bytes coming? will it wait for ever? i think it will, but I guess thats okay?
+        // what if there is no length bytes coming? will it wait forever? I think it will, but I guess that's okay?
+        // like the only issue should be the wasted memory as suspend functions will not steal the thread or anything
         val result = byteReadChannel.readPacket(length.toInt()).readString()
 
         val cr = byteReadChannel.readByte()

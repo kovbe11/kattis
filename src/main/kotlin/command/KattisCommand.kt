@@ -13,7 +13,10 @@ enum class KattisCommandType {
     GET,
     DEL,
     EXISTS,
-    FLUSHDB;
+    FLUSHDB,
+    EXPIRE,
+    TTL,
+    PERSIST;
 
     companion object {
         private val nameToTypeMap = entries.associateBy { it.name }
@@ -36,6 +39,9 @@ interface KattisCommandFactory {
             KattisCommandType.DEL to DelCommandFactory,
             KattisCommandType.EXISTS to ExistsCommandFactory,
             KattisCommandType.FLUSHDB to FlushDbCommandFactory,
+            KattisCommandType.EXPIRE to ExpireCommandFactory,
+            KattisCommandType.TTL to TtlCommandFactory,
+            KattisCommandType.PERSIST to PersistCommandFactory,
         )
 
         fun createCommand(commandType: KattisCommandType, args: RespArray): Either<RespSimpleError, KattisCommand> {

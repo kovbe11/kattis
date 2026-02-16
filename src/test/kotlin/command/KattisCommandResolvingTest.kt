@@ -238,4 +238,60 @@ class KattisCommandResolvingTest : FunSpec({
         command.isRight() shouldBe true
         command.getOrNull() shouldBe FlushDbCommand
     }
+
+    test("resolve EXPIRE command from RESP array") {
+        val respArray = RespArray(listOf(RespBulkString("EXPIRE"), RespBulkString("key"), RespBulkString("10")))
+        val command = KattisCommand.resolve(respArray)
+
+        command.isRight() shouldBe true
+        command.getOrNull() shouldBe ExpireCommand("key", 10)
+    }
+
+    test("EXPIRE with wrong number of arguments returns error") {
+        val respArray = RespArray(listOf(RespBulkString("EXPIRE"), RespBulkString("key")))
+        val command = KattisCommand.resolve(respArray)
+
+        command.isLeft() shouldBe true
+        command.leftOrNull() shouldBe RespSimpleError("ERR wrong number of arguments for 'EXPIRE' command")
+    }
+
+    test("EXPIRE with invalid seconds returns error") {
+        val respArray = RespArray(listOf(RespBulkString("EXPIRE"), RespBulkString("key"), RespBulkString("abc")))
+        val command = KattisCommand.resolve(respArray)
+
+        command.isLeft() shouldBe true
+        command.leftOrNull() shouldBe RespSimpleError("ERR value is not an integer or out of range")
+    }
+
+    test("resolve TTL command from RESP array") {
+        val respArray = RespArray(listOf(RespBulkString("TTL"), RespBulkString("key")))
+        val command = KattisCommand.resolve(respArray)
+
+        command.isRight() shouldBe true
+        command.getOrNull() shouldBe TtlCommand("key")
+    }
+
+    test("TTL with wrong number of arguments returns error") {
+        val respArray = RespArray(listOf(RespBulkString("TTL")))
+        val command = KattisCommand.resolve(respArray)
+
+        command.isLeft() shouldBe true
+        command.leftOrNull() shouldBe RespSimpleError("ERR wrong number of arguments for 'TTL' command")
+    }
+
+    test("resolve PERSIST command from RESP array") {
+        val respArray = RespArray(listOf(RespBulkString("PERSIST"), RespBulkString("key")))
+        val command = KattisCommand.resolve(respArray)
+
+        command.isRight() shouldBe true
+        command.getOrNull() shouldBe PersistCommand("key")
+    }
+
+    test("PERSIST with wrong number of arguments returns error") {
+        val respArray = RespArray(listOf(RespBulkString("PERSIST")))
+        val command = KattisCommand.resolve(respArray)
+
+        command.isLeft() shouldBe true
+        command.leftOrNull() shouldBe RespSimpleError("ERR wrong number of arguments for 'PERSIST' command")
+    }
 })

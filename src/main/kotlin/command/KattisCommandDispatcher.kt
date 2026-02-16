@@ -22,7 +22,10 @@ class KattisCommandDispatcher(keyValueStore: KeyValueStore) {
         GetCommand::class to GetCommandHandler(keyValueStore),
         DelCommand::class to DelCommandHandler(keyValueStore),
         ExistsCommand::class to ExistsCommandHandler(keyValueStore),
-        FlushDbCommand::class to FlushDbCommandHandler(keyValueStore)
+        FlushDbCommand::class to FlushDbCommandHandler(keyValueStore),
+        ExpireCommand::class to ExpireCommandHandler(keyValueStore),
+        TtlCommand::class to TtlCommandHandler(keyValueStore),
+        PersistCommand::class to PersistCommandHandler(keyValueStore)
     )
 
     suspend fun execute(command: KattisCommand): Either<RespSimpleError, RespValue<*>> {
