@@ -20,7 +20,11 @@ interface KeyExistsPort {
     suspend fun exists(key: String): Boolean
 }
 
-interface KeyValueStore : KeyValueGetPort, KeyValueSetPort, KeyValueDeletePort, KeyExistsPort
+interface KeyValueClearPort {
+    suspend fun clear()
+}
+
+interface KeyValueStore : KeyValueGetPort, KeyValueSetPort, KeyValueDeletePort, KeyExistsPort, KeyValueClearPort
 
 class BasicKeyValueStore(val map: ConcurrentMap<String, RespValue<*>>) : KeyValueStore {
     override suspend fun get(key: String): RespValue<*>? {
@@ -37,5 +41,9 @@ class BasicKeyValueStore(val map: ConcurrentMap<String, RespValue<*>>) : KeyValu
 
     override suspend fun exists(key: String): Boolean {
         return map.containsKey(key)
+    }
+
+    override suspend fun clear() {
+        return map.clear()
     }
 }

@@ -12,6 +12,7 @@ class KattisCommandDispatcherTest : FunSpec({
         override suspend fun set(key: String, value: RespValue<*>) {}
         override suspend fun delete(key: String): Boolean = false
         override suspend fun exists(key: String): Boolean = false
+        override suspend fun clear() {}
     }
     val dispatcher = KattisCommandDispatcher(mockStore)
 
@@ -75,6 +76,13 @@ class KattisCommandDispatcherTest : FunSpec({
 
         result.isRight() shouldBe true
         result.getOrNull() shouldBe RespInteger(0)
+    }
+
+    test("dispatch FLUSHDB command returns OK") {
+        val result = dispatcher.execute(FlushDbCommand)
+
+        result.isRight() shouldBe true
+        result.getOrNull() shouldBe RespSimpleString("OK")
     }
 
 })

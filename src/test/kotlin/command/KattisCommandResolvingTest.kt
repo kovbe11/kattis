@@ -214,4 +214,28 @@ class KattisCommandResolvingTest : FunSpec({
         command.isLeft() shouldBe true
         command.leftOrNull() shouldBe RespSimpleError("ERR wrong number of arguments for 'EXISTS' command")
     }
+
+    test("resolve FLUSHDB command from RESP array") {
+        val respArray = RespArray(listOf(RespBulkString("FLUSHDB")))
+        val command = KattisCommand.resolve(respArray)
+
+        command.isRight() shouldBe true
+        command.getOrNull() shouldBe FlushDbCommand
+    }
+
+    test("FLUSHDB with arguments returns error") {
+        val respArray = RespArray(listOf(RespBulkString("FLUSHDB"), RespBulkString("extra")))
+        val command = KattisCommand.resolve(respArray)
+
+        command.isLeft() shouldBe true
+        command.leftOrNull() shouldBe RespSimpleError("ERR wrong number of arguments for 'FLUSHDB' command")
+    }
+
+    test("case insensitive FLUSHDB command resolution") {
+        val respArray = RespArray(listOf(RespBulkString("flushdb")))
+        val command = KattisCommand.resolve(respArray)
+
+        command.isRight() shouldBe true
+        command.getOrNull() shouldBe FlushDbCommand
+    }
 })
