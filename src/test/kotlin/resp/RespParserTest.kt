@@ -1,7 +1,7 @@
 package com.softpaw.systems.resp
 
 import com.softpaw.systems.resp.RespProtocol.deserialize
-import com.softpaw.systems.resp.RespProtocol.serialize
+import com.softpaw.systems.resp.RespProtocol.writeSerialized
 import com.softpaw.systems.resp.RespSimpleString.Companion.OK
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FunSpec
@@ -265,10 +265,11 @@ class RespParserTest : FunSpec({
                 RespArray(emptyList())
             )
         )
-
-        val serialized = serialize(original)
-        val channel = ByteReadChannel(serialized.encodeToByteArray())
+        val channel = ByteChannel()
+        writeSerialized(channel, original)
+        channel.flush()
         val deserialized = deserialize(channel)
+        channel.close()
 
         deserialized shouldBe original
     }

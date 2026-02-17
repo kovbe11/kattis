@@ -3,9 +3,11 @@ package com.softpaw.systems.command
 import arrow.core.Either
 import com.softpaw.systems.resp.*
 import com.softpaw.systems.store.KeyValueSetExpirationPort
+import kotlinx.io.bytestring.ByteString
+import kotlinx.io.bytestring.decodeToString
 import java.time.Clock
 
-data class ExpireCommand(val key: String, val seconds: Long) : KattisCommand
+data class ExpireCommand(val key: ByteString, val seconds: Long) : KattisCommand
 
 object ExpireCommandFactory : KattisCommandFactory {
     override fun fromArgs(args: RespArray): Either<RespSimpleError, KattisCommand> {
@@ -14,8 +16,8 @@ object ExpireCommandFactory : KattisCommandFactory {
             args[1] !is RespBulkString -> Either.Left(RespSimpleError("ERR wrong type of arguments for 'EXPIRE' command"))
             args[2] !is RespBulkString -> Either.Left(RespSimpleError("ERR wrong type of arguments for 'EXPIRE' command"))
             else -> {
-                val key = (args[1] as RespBulkString).decodeToString()
-                val seconds = (args[2] as RespBulkString).decodeToString().toLongOrNull()
+                val key = (args[1] as RespBulkString).value
+                val seconds = (args[2] as RespBulkString).value.decodeToString().toLongOrNull()
                     ?: return Either.Left(RespSimpleError("ERR value is not an integer or out of range"))
                 Either.Right(ExpireCommand(key, seconds))
             }

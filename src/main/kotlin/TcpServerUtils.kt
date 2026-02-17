@@ -8,7 +8,7 @@ import com.softpaw.systems.command.KattisCommand
 import com.softpaw.systems.command.KattisCommandDispatcher
 import com.softpaw.systems.resp.RespArray
 import com.softpaw.systems.resp.RespProtocol.deserialize
-import com.softpaw.systems.resp.RespProtocol.serialize
+import com.softpaw.systems.resp.RespProtocol.writeSerialized
 import com.softpaw.systems.resp.RespSimpleError
 import io.ktor.network.selector.*
 import io.ktor.network.sockets.*
@@ -71,16 +71,13 @@ suspend fun handleConnection(
             }
 
         if (respValue !is RespArray) {
-            val errorResponse = serialize(RespSimpleError("ERR expected array"))
-            outputChannel.writeStringUtf8(errorResponse)
+            writeSerialized(outputChannel, RespSimpleError("ERR expected array"))
             continue
         }
         val response = KattisCommand.resolve(respValue)
             .flatMap { dispatcher.execute(it) }
             .merge()
-            .let { serialize(it) }
-
-        outputChannel.writeStringUtf8(response)
+        writeSerialized(outputChannel, response)
     }
     println("Connection is closed, stopping processing loop.")
 }

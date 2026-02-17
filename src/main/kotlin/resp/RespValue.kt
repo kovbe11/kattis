@@ -1,7 +1,6 @@
 package com.softpaw.systems.resp
 
 import kotlinx.io.bytestring.ByteString
-import kotlinx.io.bytestring.decodeToString
 import kotlinx.io.bytestring.encodeToByteString
 
 sealed class RespValue<T> {
@@ -39,12 +38,12 @@ data class RespBulkString(override val value: ByteString) : RespValue<ByteString
         const val FIRST_BYTE: Byte = '$'.code.toByte()
     }
 
+    override val firstByte: Byte get() = FIRST_BYTE
+
     constructor(long: Long) : this(long.toString().encodeToByteString())
     constructor(string: String) : this(string.encodeToByteString())
 
-    override val firstByte: Byte get() = FIRST_BYTE
-
-    fun decodeToString(): String = value.decodeToString()
+    val size get() = value.size
 }
 
 data class RespArray(override val value: List<RespValue<*>>) : RespValue<List<RespValue<*>>>() {
@@ -65,7 +64,6 @@ data class RespArray(override val value: List<RespValue<*>>) : RespValue<List<Re
         }
     }
 
-    fun tail(): List<RespValue<*>> = tailOrNull() ?: emptyList()
 }
 
 object RespNull : RespValue<Unit>() {

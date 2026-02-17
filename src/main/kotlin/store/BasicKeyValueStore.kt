@@ -1,6 +1,7 @@
 package com.softpaw.systems.store
 
 import com.softpaw.systems.resp.RespValue
+import kotlinx.io.bytestring.ByteString
 import java.time.Clock
 import java.time.Instant
 import java.util.concurrent.ConcurrentHashMap
@@ -8,12 +9,12 @@ import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.ConcurrentMap
 
 class BasicKeyValueStore(
-    val map: ConcurrentMap<String, StoreValue>,
+    val map: ConcurrentMap<ByteString, StoreValue>,
     private val clock: Clock = Clock.systemUTC()
 ) : KeyValueStore {
 
     // best effort to track expiring keys for proactive cleanup, may contain keys that are not actually expiring or have already been removed
-    private val expiringKeysSet = ConcurrentLinkedQueue<String>()
+    private val expiringKeysSet = ConcurrentLinkedQueue<ByteString>()
 
     companion object {
         fun default(): BasicKeyValueStore {
@@ -31,7 +32,7 @@ class BasicKeyValueStore(
         }
     }
 
-    override fun get(key: String): RespValue<*>? {
+    override fun get(key: ByteString): RespValue<*>? {
         val result = map[key] ?: return null
         if (result.isExpired(clock)) {
             return getValueWithExpirationComputed(key)?.value
@@ -39,15 +40,15 @@ class BasicKeyValueStore(
         return result.value
     }
 
-    override fun set(key: String, value: RespValue<*>) {
+    override fun set(key: ByteString, value: RespValue<*>) {
         map[key] = StoreValue(value)
     }
 
-    override fun delete(key: String): Boolean {
+    override fun delete(key: ByteString): Boolean {
         return map.remove(key) != null
     }
 
-    override fun exists(key: String): Boolean {
+    override fun exists(key: ByteString): Boolean {
         return get(key) != null
     }
 
@@ -56,7 +57,7 @@ class BasicKeyValueStore(
         expiringKeysSet.clear()
     }
 
-    override fun expire(key: String, at: Instant?): Boolean {
+    override fun expire(key: ByteString, at: Instant?): Boolean {
         val result = map.compute(key) { _, v -> v?.copy(expires = at)?.let { if (it.isExpired(clock)) null else it } }
         if (result != null && at != null) {
             expiringKeysSet.offer(key)
@@ -64,7 +65,7 @@ class BasicKeyValueStore(
         return result != null
     }
 
-    override fun ttl(key: String): Pair<Instant?, Boolean> {
+    override fun ttl(key: ByteString): Pair<Instant?, Boolean> {
         var result = map[key] ?: return emptyTtl
         if (result.isExpired(clock)) {
             // result will be updated only if concurrent update happens
@@ -95,7 +96,7 @@ class BasicKeyValueStore(
     }
 
     // if present, the map will lock the key either way
-    private fun getValueWithExpirationComputed(key: String): StoreValue? {
+    private fun getValueWithExpirationComputed(key: ByteString): StoreValue? {
         return map.computeIfPresent(key) { _, v -> if (v.isExpired(clock)) null else v }
     }
 }

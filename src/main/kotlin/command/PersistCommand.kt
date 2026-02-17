@@ -3,8 +3,9 @@ package com.softpaw.systems.command
 import arrow.core.Either
 import com.softpaw.systems.resp.*
 import com.softpaw.systems.store.KeyValueSetExpirationPort
+import kotlinx.io.bytestring.ByteString
 
-data class PersistCommand(val key: String) : KattisCommand
+data class PersistCommand(val key: ByteString) : KattisCommand
 
 object PersistCommandFactory : KattisCommandFactory {
     override fun fromArgs(args: RespArray): Either<RespSimpleError, KattisCommand> {
@@ -12,7 +13,7 @@ object PersistCommandFactory : KattisCommandFactory {
             args.size != 2 -> Either.Left(RespSimpleError("ERR wrong number of arguments for 'PERSIST' command"))
             args[1] !is RespBulkString -> Either.Left(RespSimpleError("ERR wrong type of arguments for 'PERSIST' command"))
             else -> {
-                val key = (args[1] as RespBulkString).decodeToString()
+                val key = (args[1] as RespBulkString).value
                 Either.Right(PersistCommand(key))
             }
         }

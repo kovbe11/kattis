@@ -5,6 +5,7 @@ import com.softpaw.systems.resp.RespBulkString
 import com.softpaw.systems.resp.RespSimpleError
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
+import kotlinx.io.bytestring.encodeToByteString
 
 class KattisCommandResolvingTest : FunSpec({
 
@@ -244,7 +245,7 @@ class KattisCommandResolvingTest : FunSpec({
         val command = KattisCommand.resolve(respArray)
 
         command.isRight() shouldBe true
-        command.getOrNull() shouldBe ExpireCommand("key", 10)
+        command.getOrNull() shouldBe ExpireCommand("key".encodeToByteString(), 10)
     }
 
     test("EXPIRE with wrong number of arguments returns error") {
@@ -268,7 +269,7 @@ class KattisCommandResolvingTest : FunSpec({
         val command = KattisCommand.resolve(respArray)
 
         command.isRight() shouldBe true
-        command.getOrNull() shouldBe TtlCommand("key")
+        command.getOrNull() shouldBe TtlCommand("key".encodeToByteString())
     }
 
     test("TTL with wrong number of arguments returns error") {
@@ -284,7 +285,7 @@ class KattisCommandResolvingTest : FunSpec({
         val command = KattisCommand.resolve(respArray)
 
         command.isRight() shouldBe true
-        command.getOrNull() shouldBe PersistCommand("key")
+        command.getOrNull() shouldBe PersistCommand("key".encodeToByteString())
     }
 
     test("PERSIST with wrong number of arguments returns error") {

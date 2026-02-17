@@ -4,6 +4,9 @@ import arrow.core.Either
 import com.softpaw.systems.resp.RespArray
 import com.softpaw.systems.resp.RespBulkString
 import com.softpaw.systems.resp.RespSimpleError
+import kotlinx.io.bytestring.ByteString
+import kotlinx.io.bytestring.encodeToByteString
+import kotlinx.io.bytestring.indices
 
 
 enum class KattisCommandType {
@@ -19,9 +22,32 @@ enum class KattisCommandType {
     PERSIST;
 
     companion object {
-        private val nameToTypeMap = entries.associateBy { it.name }
+        private val nameToTypeMap = entries.associateBy { it.name.encodeToByteString() }
 
-        fun fromName(name: String): KattisCommandType? = nameToTypeMap[name.uppercase()]
+        fun fromName(name: ByteString): KattisCommandType? {
+            val exactMatch = nameToTypeMap[name]
+            if (exactMatch != null) {
+                return exactMatch
+            }
+
+            val result = nameToTypeMap.entries.firstOrNull { (k, _) ->
+                if (k.size != name.size) {
+                    return@firstOrNull false
+                }
+                for (i in k.indices) {
+                    val nameByte = name[i]
+                    val typeByte = k[i]
+
+                    when (nameByte) {
+                        typeByte -> continue
+                        in 'a'.code.toByte()..'z'.code.toByte() if nameByte - 32 == typeByte.toInt() -> continue
+                        else -> return@firstOrNull false
+                    }
+                }
+                true
+            }?.value
+            return result
+        }
     }
 
 }
@@ -58,9 +84,7 @@ interface KattisCommand {
 
         fun resolve(args: RespArray): Either<RespSimpleError, KattisCommand> {
             val commandType: KattisCommandType = when (val name = args.firstOrNull()) {
-                is RespBulkString -> KattisCommandType.fromName(name.decodeToString()) ?: return Either.Left(
-                    unknownCommand
-                )
+                is RespBulkString -> KattisCommandType.fromName(name.value) ?: return Either.Left(unknownCommand)
                 else -> return Either.Left(unknownCommand)
             }
             return KattisCommandFactory.createCommand(commandType, args)

@@ -1,23 +1,24 @@
 package com.softpaw.systems.store
 
 import com.softpaw.systems.resp.RespValue
+import kotlinx.io.bytestring.ByteString
 import java.time.Instant
 
 
 interface KeyValueGetPort {
-    fun get(key: String): RespValue<*>?
+    fun get(key: ByteString): RespValue<*>?
 }
 
 interface KeyValueSetPort {
-    fun set(key: String, value: RespValue<*>)
+    fun set(key: ByteString, value: RespValue<*>)
 }
 
 interface KeyValueDeletePort {
-    fun delete(key: String): Boolean
+    fun delete(key: ByteString): Boolean
 }
 
 interface KeyExistsPort {
-    fun exists(key: String): Boolean
+    fun exists(key: ByteString): Boolean
 }
 
 interface KeyValueClearPort {
@@ -25,11 +26,11 @@ interface KeyValueClearPort {
 }
 
 interface KeyValueSetExpirationPort {
-    fun expire(key: String, at: Instant?): Boolean
+    fun expire(key: ByteString, at: Instant?): Boolean
 }
 
 interface KeyValueGetTtlPort {
-    fun ttl(key: String): Pair<Instant?, Boolean>
+    fun ttl(key: ByteString): Pair<Instant?, Boolean>
 }
 
 interface KeyExpiryCleanupPort {

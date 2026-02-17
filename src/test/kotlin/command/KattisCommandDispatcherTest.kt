@@ -5,18 +5,20 @@ import com.softpaw.systems.resp.RespSimpleString.Companion.OK
 import com.softpaw.systems.store.KeyValueStore
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
+import kotlinx.io.bytestring.ByteString
+import kotlinx.io.bytestring.encodeToByteString
 import java.time.Instant
 
 class KattisCommandDispatcherTest : FunSpec({
 
     val mockStore = object : KeyValueStore {
-        override fun get(key: String): RespValue<*>? = null
-        override fun set(key: String, value: RespValue<*>) {}
-        override fun delete(key: String): Boolean = false
-        override fun exists(key: String): Boolean = false
+        override fun get(key: ByteString): RespValue<*>? = null
+        override fun set(key: ByteString, value: RespValue<*>) {}
+        override fun delete(key: ByteString): Boolean = false
+        override fun exists(key: ByteString): Boolean = false
         override fun clear() {}
-        override fun expire(key: String, at: Instant?): Boolean = false
-        override fun ttl(key: String): Pair<Instant?, Boolean> = Pair(null, false)
+        override fun expire(key: ByteString, at: Instant?): Boolean = false
+        override fun ttl(key: ByteString): Pair<Instant?, Boolean> = Pair(null, false)
         override fun proactiveExpireCleanup(numberOfKeysToClean: Int): Int = 0
     }
     val dispatcher = KattisCommandDispatcher(mockStore)
@@ -48,7 +50,7 @@ class KattisCommandDispatcherTest : FunSpec({
     }
 
     test("dispatch SET command returns OK") {
-        val command = SetCommand("key", RespBulkString("value"))
+        val command = SetCommand("key".encodeToByteString(), RespBulkString("value"))
 
         val result = dispatcher.execute(command)
 
@@ -57,7 +59,7 @@ class KattisCommandDispatcherTest : FunSpec({
     }
 
     test("dispatch GET command returns null") {
-        val command = GetCommand("key")
+        val command = GetCommand("key".encodeToByteString())
 
         val result = dispatcher.execute(command)
 
@@ -91,7 +93,7 @@ class KattisCommandDispatcherTest : FunSpec({
     }
 
     test("dispatch EXPIRE command returns 0 for non-existent key") {
-        val command = ExpireCommand("key", 10)
+        val command = ExpireCommand("key".encodeToByteString(), 10)
 
         val result = dispatcher.execute(command)
 
@@ -100,7 +102,7 @@ class KattisCommandDispatcherTest : FunSpec({
     }
 
     test("dispatch TTL command returns -2 for non-existent key") {
-        val command = TtlCommand("key")
+        val command = TtlCommand("key".encodeToByteString())
 
         val result = dispatcher.execute(command)
 
@@ -109,7 +111,7 @@ class KattisCommandDispatcherTest : FunSpec({
     }
 
     test("dispatch PERSIST command returns 0 for non-existent key") {
-        val command = PersistCommand("key")
+        val command = PersistCommand("key".encodeToByteString())
 
         val result = dispatcher.execute(command)
 

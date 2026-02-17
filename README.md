@@ -103,7 +103,9 @@ do not use ping, it does not support inline commands
     - [ ] `INCR`, `DECR` etc.
     - [ ] `LPUSH`, `LLEN`, `LPOP` etc.
     - maybe others, like set and hash operations.
-- [ ] Try optimizing for performance - what can we learn?
+- [ ] Add optional params to commands
+- [x] Try optimizing for performance - what can we learn?
+  - ByteStrings are not that big of a deal
 - [ ] Implement disaster recovery from file
 
 ### Phase 2: Advanced

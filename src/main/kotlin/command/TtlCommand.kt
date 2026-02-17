@@ -3,16 +3,17 @@ package com.softpaw.systems.command
 import arrow.core.Either
 import com.softpaw.systems.resp.*
 import com.softpaw.systems.store.KeyValueGetTtlPort
+import kotlinx.io.bytestring.ByteString
 import java.time.Clock
 
-data class TtlCommand(val key: String) : KattisCommand
+data class TtlCommand(val key: ByteString) : KattisCommand
 
 object TtlCommandFactory : KattisCommandFactory {
     override fun fromArgs(args: RespArray): Either<RespSimpleError, KattisCommand> {
         return when {
             args.size != 2 -> Either.Left(RespSimpleError("ERR wrong number of arguments for 'TTL' command"))
             args[1] !is RespBulkString -> Either.Left(RespSimpleError("ERR wrong type of arguments for 'TTL' command"))
-            else -> Either.Right(TtlCommand((args[1] as RespBulkString).decodeToString()))
+            else -> Either.Right(TtlCommand((args[1] as RespBulkString).value))
         }
     }
 }

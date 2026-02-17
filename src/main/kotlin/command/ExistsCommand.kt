@@ -21,7 +21,7 @@ object ExistsCommandFactory : KattisCommandFactory {
 
 class ExistsCommandHandler(val store: KeyExistsPort) : KattisCommandHandler<ExistsCommand> {
     override suspend fun handle(command: ExistsCommand): Either<RespSimpleError, RespValue<*>> {
-        val existsCount = command.keys.count { key -> store.exists(key.decodeToString()) }
+        val existsCount = command.keys.count { key -> store.exists(key.value) }
         return Either.Right(RespInteger(existsCount.toLong()))
     }
 }

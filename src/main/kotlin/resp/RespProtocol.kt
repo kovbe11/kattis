@@ -2,7 +2,6 @@ package com.softpaw.systems.resp
 
 import io.ktor.utils.io.*
 import kotlinx.io.bytestring.ByteString
-import kotlinx.io.bytestring.decodeToString
 
 
 object RespProtocol {
@@ -57,7 +56,10 @@ object RespProtocol {
     suspend fun handleBulkString(byteReadChannel: ByteReadChannel): RespValue<*> {
         val length = readLong(byteReadChannel, "BulkString length", max = 11)
         if (length < 0) return RespNull
+        // I mean, if length is big, this could be dangerous
+        // todo: check how we should do this
         val bytes = ByteArray(length.toInt())
+
         byteReadChannel.readFully(bytes, 0, length.toInt())
 
         val cr = byteReadChannel.readByte()
@@ -117,23 +119,29 @@ object RespProtocol {
 
     val RespValue<*>.firstChar: Char get() = this.firstByte.toInt().toChar()
 
-    fun serialize(value: RespValue<*>): String {
-        return when (value) {
-            is RespSimpleString -> "${value.firstChar}${value.value}\r\n"
-            is RespSimpleError -> "${value.firstChar}${value.value}\r\n"
-            is RespInteger -> "${value.firstChar}${value.value}\r\n"
+    suspend fun writeSerialized(byteWriteChannel: ByteWriteChannel, value: RespValue<*>) {
+        when (value) {
+            is RespSimpleString, is RespSimpleError, is RespInteger ->
+                byteWriteChannel.writeStringUtf8("${value.firstChar}${value.value}\r\n")
+
             is RespBulkString -> {
-                val bytes = value.value
-                "${value.firstChar}${bytes.size}\r\n${bytes.decodeToString()}\r\n"
+                byteWriteChannel.writeStringUtf8("${value.firstChar}${value.size}\r\n")
+                byteWriteChannel.writeFully(value.value.toByteArray())
+                byteWriteChannel.writeStringUtf8("\r\n")
             }
 
             is RespArray -> {
-                val elements = value.value.joinToString("") { serialize(it) }
-                "${value.firstChar}${value.value.size}\r\n$elements"
+                byteWriteChannel.writeStringUtf8("${value.firstChar}${value.size}\r\n")
+                for (element in value.value) {
+                    writeSerialized(byteWriteChannel, element)
+                }
+
             }
 
-            is RespNull -> "${value.firstChar}\r\n"
-            is RespBoolean -> "${value.firstChar}${if (value.value) "t" else "f"}\r\n"
+            is RespNull -> byteWriteChannel.writeStringUtf8("${value.firstChar}\r\n")
+            is RespBoolean ->
+                byteWriteChannel.writeStringUtf8("${value.firstChar}${if (value.value) "t" else "f"}\r\n")
+
             else -> throw IllegalArgumentException("Unsupported RespValue type: ${value::class}")
         }
     }

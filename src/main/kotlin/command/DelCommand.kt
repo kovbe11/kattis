@@ -21,7 +21,7 @@ object DelCommandFactory : KattisCommandFactory {
 
 class DelCommandHandler(val store: KeyValueDeletePort) : KattisCommandHandler<DelCommand> {
     override suspend fun handle(command: DelCommand): Either<RespSimpleError, RespValue<*>> {
-        val deletedCount = command.keys.count { key -> store.delete(key.decodeToString()) }
+        val deletedCount = command.keys.count { key -> store.delete(key.value) }
         return Either.Right(RespInteger(deletedCount.toLong()))
     }
 }
