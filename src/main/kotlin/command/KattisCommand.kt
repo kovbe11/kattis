@@ -58,7 +58,9 @@ interface KattisCommand {
 
         fun resolve(args: RespArray): Either<RespSimpleError, KattisCommand> {
             val commandType: KattisCommandType = when (val name = args.firstOrNull()) {
-                is RespBulkString -> KattisCommandType.fromName(name.value) ?: return Either.Left(unknownCommand)
+                is RespBulkString -> KattisCommandType.fromName(name.decodeToString()) ?: return Either.Left(
+                    unknownCommand
+                )
                 else -> return Either.Left(unknownCommand)
             }
             return KattisCommandFactory.createCommand(commandType, args)

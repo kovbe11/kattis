@@ -14,8 +14,8 @@ object ExpireCommandFactory : KattisCommandFactory {
             args[1] !is RespBulkString -> Either.Left(RespSimpleError("ERR wrong type of arguments for 'EXPIRE' command"))
             args[2] !is RespBulkString -> Either.Left(RespSimpleError("ERR wrong type of arguments for 'EXPIRE' command"))
             else -> {
-                val key = (args[1] as RespBulkString).value
-                val seconds = (args[2] as RespBulkString).value.toLongOrNull()
+                val key = (args[1] as RespBulkString).decodeToString()
+                val seconds = (args[2] as RespBulkString).decodeToString().toLongOrNull()
                     ?: return Either.Left(RespSimpleError("ERR value is not an integer or out of range"))
                 Either.Right(ExpireCommand(key, seconds))
             }

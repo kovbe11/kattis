@@ -1,5 +1,9 @@
 package com.softpaw.systems.resp
 
+import kotlinx.io.bytestring.ByteString
+import kotlinx.io.bytestring.decodeToString
+import kotlinx.io.bytestring.encodeToByteString
+
 sealed class RespValue<T> {
     abstract val value: T
     abstract val firstByte: Byte
@@ -30,12 +34,17 @@ data class RespInteger(override val value: Long) : RespValue<Long>() {
     override val firstByte: Byte get() = FIRST_BYTE
 }
 
-data class RespBulkString(override val value: String) : RespValue<String>() {
+data class RespBulkString(override val value: ByteString) : RespValue<ByteString>() {
     companion object {
         const val FIRST_BYTE: Byte = '$'.code.toByte()
     }
 
+    constructor(long: Long) : this(long.toString().encodeToByteString())
+    constructor(string: String) : this(string.encodeToByteString())
+
     override val firstByte: Byte get() = FIRST_BYTE
+
+    fun decodeToString(): String = value.decodeToString()
 }
 
 data class RespArray(override val value: List<RespValue<*>>) : RespValue<List<RespValue<*>>>() {

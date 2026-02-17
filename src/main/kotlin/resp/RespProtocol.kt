@@ -1,7 +1,8 @@
 package com.softpaw.systems.resp
 
 import io.ktor.utils.io.*
-import kotlinx.io.readString
+import kotlinx.io.bytestring.ByteString
+import kotlinx.io.bytestring.decodeToString
 
 
 object RespProtocol {
@@ -56,9 +57,8 @@ object RespProtocol {
     suspend fun handleBulkString(byteReadChannel: ByteReadChannel): RespValue<*> {
         val length = readLong(byteReadChannel, "BulkString length", max = 11)
         if (length < 0) return RespNull
-        // what if there is no length bytes coming? will it wait forever? I think it will, but I guess that's okay?
-        // like the only issue should be the wasted memory as suspend functions will not steal the thread or anything
-        val result = byteReadChannel.readPacket(length.toInt()).readString()
+        val bytes = ByteArray(length.toInt())
+        byteReadChannel.readFully(bytes, 0, length.toInt())
 
         val cr = byteReadChannel.readByte()
         val lf = byteReadChannel.readByte()
@@ -67,7 +67,7 @@ object RespProtocol {
             throw RuntimeException("Bulk string expected CRLF terminator")
         }
 
-        return RespBulkString(result)
+        return RespBulkString(ByteString(bytes))
     }
 
     suspend fun handleArray(byteReadChannel: ByteReadChannel): RespArray {
@@ -123,8 +123,8 @@ object RespProtocol {
             is RespSimpleError -> "${value.firstChar}${value.value}\r\n"
             is RespInteger -> "${value.firstChar}${value.value}\r\n"
             is RespBulkString -> {
-                val str = value.value
-                "${value.firstChar}${str.length}\r\n$str\r\n"
+                val bytes = value.value
+                "${value.firstChar}${bytes.size}\r\n${bytes.decodeToString()}\r\n"
             }
 
             is RespArray -> {

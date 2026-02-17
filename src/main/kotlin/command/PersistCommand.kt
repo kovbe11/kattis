@@ -12,7 +12,7 @@ object PersistCommandFactory : KattisCommandFactory {
             args.size != 2 -> Either.Left(RespSimpleError("ERR wrong number of arguments for 'PERSIST' command"))
             args[1] !is RespBulkString -> Either.Left(RespSimpleError("ERR wrong type of arguments for 'PERSIST' command"))
             else -> {
-                val key = (args[1] as RespBulkString).value
+                val key = (args[1] as RespBulkString).decodeToString()
                 Either.Right(PersistCommand(key))
             }
         }

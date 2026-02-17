@@ -10,7 +10,7 @@ object GetCommandFactory : KattisCommandFactory {
     override fun fromArgs(args: RespArray): Either<RespSimpleError, KattisCommand> {
         return when {
             args.size == 2 && args[1] is RespBulkString ->
-                Either.Right(GetCommand((args[1] as RespBulkString).value))
+                Either.Right(GetCommand((args[1] as RespBulkString).decodeToString()))
 
             else -> Either.Left(RespSimpleError("ERR wrong number of arguments for 'GET' command"))
         }
@@ -22,7 +22,7 @@ class GetCommandHandler(val store: KeyValueGetPort) : KattisCommandHandler<GetCo
         val value = store.get(command.key) ?: return Either.Right(RespNull)
         return when (value) {
             is RespBulkString -> Either.Right(value)
-            is RespInteger -> Either.Right(RespBulkString(value.value.toString()))
+            is RespInteger -> Either.Right(RespBulkString(value.value))
             else -> Either.Left(RespSimpleError("ERR unsupported operation"))
         }
     }

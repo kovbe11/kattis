@@ -12,7 +12,7 @@ object TtlCommandFactory : KattisCommandFactory {
         return when {
             args.size != 2 -> Either.Left(RespSimpleError("ERR wrong number of arguments for 'TTL' command"))
             args[1] !is RespBulkString -> Either.Left(RespSimpleError("ERR wrong type of arguments for 'TTL' command"))
-            else -> Either.Right(TtlCommand((args[1] as RespBulkString).value))
+            else -> Either.Right(TtlCommand((args[1] as RespBulkString).decodeToString()))
         }
     }
 }
