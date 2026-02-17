@@ -2,6 +2,7 @@ package com.softpaw.systems.resp
 
 import com.softpaw.systems.resp.RespProtocol.deserialize
 import com.softpaw.systems.resp.RespProtocol.serialize
+import com.softpaw.systems.resp.RespSimpleString.Companion.OK
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
@@ -15,7 +16,7 @@ class RespParserTest : FunSpec({
 
         val result = deserialize(channel)
 
-        result shouldBe RespSimpleString("OK")
+        result shouldBe OK
     }
 
     test("parse simple error - ERR unknown command") {
@@ -110,7 +111,7 @@ class RespParserTest : FunSpec({
             listOf(
                 RespInteger(1),
                 RespBulkString("hello"),
-                RespSimpleString("OK"),
+                OK,
                 RespSimpleError("ERR"),
                 RespBoolean(true)
             )
@@ -246,7 +247,7 @@ class RespParserTest : FunSpec({
     test("serialize and deserialize all implemented types in array") {
         val original = RespArray(
             listOf(
-                RespSimpleString("OK"),
+                OK,
                 RespSimpleError("ERR something went wrong"),
                 RespInteger(42),
                 RespInteger(-100),

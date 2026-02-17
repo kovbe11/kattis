@@ -8,6 +8,7 @@ sealed class RespValue<T> {
 data class RespSimpleString(override val value: String) : RespValue<String>() {
     companion object {
         const val FIRST_BYTE: Byte = '+'.code.toByte()
+        val OK = RespSimpleString("OK")
     }
 
     override val firstByte: Byte get() = FIRST_BYTE

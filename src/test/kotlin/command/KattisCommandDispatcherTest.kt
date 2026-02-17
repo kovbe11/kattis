@@ -1,6 +1,7 @@
 package com.softpaw.systems.command
 
 import com.softpaw.systems.resp.*
+import com.softpaw.systems.resp.RespSimpleString.Companion.OK
 import com.softpaw.systems.store.KeyValueStore
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.matchers.shouldBe
@@ -16,6 +17,7 @@ class KattisCommandDispatcherTest : FunSpec({
         override fun clear() {}
         override fun expire(key: String, at: Instant?): Boolean = false
         override fun ttl(key: String): Pair<Instant?, Boolean> = Pair(null, false)
+        override fun proactiveExpireCleanup(numberOfKeysToClean: Int): Int = 0
     }
     val dispatcher = KattisCommandDispatcher(mockStore)
 
@@ -51,7 +53,7 @@ class KattisCommandDispatcherTest : FunSpec({
         val result = dispatcher.execute(command)
 
         result.isRight() shouldBe true
-        result.getOrNull() shouldBe RespSimpleString("OK")
+        result.getOrNull() shouldBe OK
     }
 
     test("dispatch GET command returns null") {
@@ -85,7 +87,7 @@ class KattisCommandDispatcherTest : FunSpec({
         val result = dispatcher.execute(FlushDbCommand)
 
         result.isRight() shouldBe true
-        result.getOrNull() shouldBe RespSimpleString("OK")
+        result.getOrNull() shouldBe OK
     }
 
     test("dispatch EXPIRE command returns 0 for non-existent key") {

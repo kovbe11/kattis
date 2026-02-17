@@ -19,6 +19,7 @@ class BasicKeyValueStore(
         fun default(): BasicKeyValueStore {
             return BasicKeyValueStore(ConcurrentHashMap())
         }
+        private val emptyTtl = Pair(null, false)
     }
 
     data class StoreValue(
@@ -31,7 +32,11 @@ class BasicKeyValueStore(
     }
 
     override fun get(key: String): RespValue<*>? {
-        return map.computeIfPresent(key) { _, v -> if (v.isExpired(clock)) null else v }?.value
+        val result = map[key] ?: return null
+        if (result.isExpired(clock)) {
+            return getValueWithExpirationComputed(key)?.value
+        }
+        return result.value
     }
 
     override fun set(key: String, value: RespValue<*>) {
@@ -43,7 +48,7 @@ class BasicKeyValueStore(
     }
 
     override fun exists(key: String): Boolean {
-        return map.containsKey(key)
+        return get(key) != null
     }
 
     override fun clear() {
@@ -60,24 +65,37 @@ class BasicKeyValueStore(
     }
 
     override fun ttl(key: String): Pair<Instant?, Boolean> {
-        val storeValue = map.computeIfPresent(key) { _, v -> if (v.isExpired(clock)) null else v }
-            ?: return Pair(null, false)
-        return Pair(storeValue.expires, true)
+        var result = map[key] ?: return emptyTtl
+        if (result.isExpired(clock)) {
+            // result will be updated only if concurrent update happens
+            result = getValueWithExpirationComputed(key) ?: return emptyTtl
+        }
+        return Pair(result.expires, true)
     }
 
     override fun proactiveExpireCleanup(numberOfKeysToClean: Int): Int {
         var removed = 0
         repeat(numberOfKeysToClean) {
             val next = expiringKeysSet.poll() ?: return removed
-            map.computeIfPresent(next) { _, v ->
-                if (v.isExpired(clock)) {
-                    removed++
-                    null
-                } else v
-            }?.let {
-                expiringKeysSet.offer(next)
+            val value = map[next] ?: return@repeat
+            when {
+                value.expires == null -> return@repeat
+                value.isExpired(clock) -> {
+                    val concurrentUpdateResultOrNull = getValueWithExpirationComputed(next)
+                    when {
+                        concurrentUpdateResultOrNull == null -> removed++
+                        concurrentUpdateResultOrNull.expires != null -> expiringKeysSet.offer(next)
+                    }
+                }
+
+                else -> expiringKeysSet.offer(next)
             }
         }
         return removed
+    }
+
+    // if present, the map will lock the key either way
+    private fun getValueWithExpirationComputed(key: String): StoreValue? {
+        return map.computeIfPresent(key) { _, v -> if (v.isExpired(clock)) null else v }
     }
 }
