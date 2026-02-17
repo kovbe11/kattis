@@ -43,7 +43,6 @@ suspend fun startAcceptingConnections(listener: ServerSocket, dispatcher: Kattis
                         connection.use { connection ->
                             val inputChannel = connection.openReadChannel()
                             val outputChannel = connection.openWriteChannel(autoFlush = true)
-                            println("Client connected: ${connection.remoteAddress}")
 
                             Either.catch { handleConnection(inputChannel, outputChannel, dispatcher) }
                                 .onLeft { e -> println("Client error: ${e.message}") }

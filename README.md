@@ -106,7 +106,7 @@ do not use ping, it does not support inline commands
 - [ ] Add optional params to commands
 - [x] Try optimizing for performance - what can we learn?
   - ByteStrings are not that big of a deal
-- [ ] Implement disaster recovery from file
+- [ ] Add monitoring and logging
 
 ### Phase 2: Advanced
 

@@ -1,6 +1,7 @@
 package com.softpaw.systems.resp
 
 import io.ktor.utils.io.*
+import kotlinx.coroutines.withTimeout
 import kotlinx.io.bytestring.ByteString
 
 
@@ -22,6 +23,9 @@ object RespProtocol {
         RespSet.FIRST_BYTE to ::handleSet,
         RespPush.FIRST_BYTE to ::handlePush
     )
+
+    private const val MAX_BULK_STRING_SIZE = 128L * 1024L * 1024L // 128 MiB
+    private const val TIMEOUT_FOR_READ = 5000L // 5 seconds
 
     // this does not support inline commands. I do not comprehend why anyone came up with that idea.
     suspend fun deserialize(byteReadChannel: ByteReadChannel): RespValue<*> {
@@ -47,20 +51,24 @@ object RespProtocol {
     }
 
     private suspend fun readLong(byteReadChannel: ByteReadChannel, type: String, max: Int = 21): Long {
-        val line =
-            byteReadChannel.readUTF8Line(max = max)
-                ?: throw RuntimeException("Unexpected end of input while reading $type")
+        val line = byteReadChannel.readUTF8Line(max = max)
+            ?: throw RuntimeException("Unexpected end of input while reading $type")
         return line.toLongOrNull() ?: throw RuntimeException("Invalid integer format: `$line`")
     }
 
     suspend fun handleBulkString(byteReadChannel: ByteReadChannel): RespValue<*> {
         val length = readLong(byteReadChannel, "BulkString length", max = 11)
         if (length < 0) return RespNull
-        // I mean, if length is big, this could be dangerous
-        // todo: check how we should do this
+
+        if (length > MAX_BULK_STRING_SIZE) {
+            throw RuntimeException("Bulk string too large: $length bytes (Max: $MAX_BULK_STRING_SIZE)")
+        }
         val bytes = ByteArray(length.toInt())
 
-        byteReadChannel.readFully(bytes, 0, length.toInt())
+        // we close connection if they take too long.
+        withTimeout(TIMEOUT_FOR_READ) {
+            byteReadChannel.readFully(bytes, 0, length.toInt())
+        }
 
         val cr = byteReadChannel.readByte()
         val lf = byteReadChannel.readByte()
