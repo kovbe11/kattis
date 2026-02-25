@@ -32,13 +32,13 @@ data class LiteralToken<T>(val name: ByteString, val result: T) : Token<T> {
     }
 
     override fun tryParse(
-        args: List<ByteString>,
+        args: List<RespBulkString>,
         pos: Int
     ): Either<ParseError, Parsed<T>> {
         val tokenMatch = args.getOrNull(pos) ?: return Left(UnexpectedEof(args.last()))
         return when {
-            name.caseInsensitiveMatchLeftAlwaysUppercase(tokenMatch) -> Right(ParsedValue(result, pos + 1))
-            else -> Left(MismatchedToken(name, tokenMatch))
+            name.caseInsensitiveMatchLeftAlwaysUppercase(tokenMatch.value) -> Right(ParsedValue(result, pos + 1))
+            else -> Left(MismatchedToken(name, tokenMatch.value))
         }
     }
 }
@@ -47,11 +47,11 @@ object ByteStringToken : Token<ByteString> {
     override fun match(byteString: ByteString): Boolean = true
 
     override fun tryParse(
-        args: List<ByteString>,
+        args: List<RespBulkString>,
         pos: Int
     ): Either<ParseError, Parsed<ByteString>> {
         val tokenMatch = args.getOrNull(pos) ?: return Left(UnexpectedEof(args.last()))
-        return Right(ParsedByteString(tokenMatch, pos + 1))
+        return Right(ParsedByteString(tokenMatch.value, pos + 1))
     }
 }
 
@@ -59,11 +59,12 @@ object IntegerToken : Token<Long> {
     override fun match(byteString: ByteString): Boolean = true
 
     override fun tryParse(
-        args: List<ByteString>,
+        args: List<RespBulkString>,
         pos: Int
     ): Either<ParseError, Parsed<Long>> {
         val tokenMatch = args.getOrNull(pos) ?: return Left(UnexpectedEof(args.last()))
-        val long = tokenMatch.decodeToString().toLongOrNull() ?: return Left(WrongType(tokenMatch, Long::class))
+        val long =
+            tokenMatch.value.decodeToString().toLongOrNull() ?: return Left(WrongType(tokenMatch.value, Long::class))
         return Right(ParsedInteger(long, pos + 1))
     }
 }

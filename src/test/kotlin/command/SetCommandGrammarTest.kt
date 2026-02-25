@@ -1,7 +1,5 @@
 package com.softpaw.systems.command
 
-import arrow.core.Some
-import arrow.core.none
 import com.softpaw.systems.resp.RespArray
 import com.softpaw.systems.resp.RespBulkString
 import io.kotest.core.spec.style.FunSpec
@@ -37,16 +35,16 @@ class SetCommandGrammarTest : FunSpec({
             key = "mykey".encodeToByteString(),
             value = RespBulkString("myvalue"),
             options = SetCommandOptions(
-                onlySetIf = none(),
+                onlySetIf = null,
                 getOldValue = false,
-                expiry = none()
+                expiry = null
             )
         )
     }
 
     test("SET key value NX") {
         val cmd = parseOk("mykey", "myvalue", "NX")
-        cmd.options!!.onlySetIf shouldBe Some(OnlySetIfItDoesNotExist)
+        cmd.options!!.onlySetIf shouldBe OnlySetIfItDoesNotExist
     }
 
     test("SET key value GET") {
@@ -56,29 +54,29 @@ class SetCommandGrammarTest : FunSpec({
 
     test("SET key value EX 10") {
         val cmd = parseOk("mykey", "myvalue", "EX", "10")
-        cmd.options!!.expiry shouldBe Some(ExpireAfter(10))
+        cmd.options!!.expiry shouldBe ExpireAfter(10)
     }
 
     test("SET key value KEEPTTL") {
         val cmd = parseOk("mykey", "myvalue", "KEEPTTL")
-        cmd.options!!.expiry shouldBe Some(KeepTtl)
+        cmd.options!!.expiry shouldBe KeepTtl
     }
 
     test("SET key value IFEQ oldval") {
         val cmd = parseOk("mykey", "myvalue", "IFEQ", "oldval")
-        cmd.options!!.onlySetIf shouldBe Some(OnlySetIfEqualToValue(RespBulkString("oldval")))
+        cmd.options!!.onlySetIf shouldBe OnlySetIfEqualToValue(RespBulkString("oldval"))
     }
 
     test("SET key value IFNE oldval") {
         val cmd = parseOk("mykey", "myvalue", "IFNE", "oldval")
-        cmd.options!!.onlySetIf shouldBe Some(OnlySetIfNotEqualToValue(RespBulkString("oldval")))
+        cmd.options!!.onlySetIf shouldBe OnlySetIfNotEqualToValue(RespBulkString("oldval"))
     }
 
     test("SET key value NX GET EX 10 (supported order)") {
         val cmd = parseOk("mykey", "myvalue", "NX", "GET", "EX", "10")
-        cmd.options!!.onlySetIf shouldBe Some(OnlySetIfItDoesNotExist)
-        cmd.options!!.getOldValue shouldBe true
-        cmd.options!!.expiry shouldBe Some(ExpireAfter(10))
+        cmd.options!!.onlySetIf shouldBe OnlySetIfItDoesNotExist
+        cmd.options.getOldValue shouldBe true
+        cmd.options.expiry shouldBe ExpireAfter(10)
     }
 
     // =============================================

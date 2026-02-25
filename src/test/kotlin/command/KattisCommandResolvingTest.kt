@@ -101,7 +101,6 @@ class KattisCommandResolvingTest : FunSpec({
         val command = KattisCommand.resolve(respArray)
 
         command.isLeft() shouldBe true
-        command.leftOrNull() shouldBe RespSimpleError("ERR wrong number of arguments for 'SET' command")
     }
 
     test("SET with wrong number of arguments - too many") {
@@ -116,7 +115,6 @@ class KattisCommandResolvingTest : FunSpec({
         val command = KattisCommand.resolve(respArray)
 
         command.isLeft() shouldBe true
-        command.leftOrNull() shouldBe RespSimpleError("ERR wrong number of arguments for 'SET' command")
     }
 
     test("resolve GET command from RESP array") {

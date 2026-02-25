@@ -11,10 +11,10 @@ import java.util.*
 import kotlin.reflect.KClass
 
 interface Parser<out T> {
-    fun tryParse(args: List<ByteString>, pos: Int): Either<ParseError, Parsed<T>>
+    fun tryParse(args: List<RespBulkString>, pos: Int): Either<ParseError, Parsed<T>>
 }
 
-fun <T> Parser<T>.tryParseToEnd(args: List<ByteString>): Either<ParseError, Parsed<T>> {
+fun <T> Parser<T>.tryParseToEnd(args: List<RespBulkString>): Either<ParseError, Parsed<T>> {
     return this.tryParse(args, 0).flatMap {
         if (it.nextPosition != args.size)
             Left(UnparsedRemainder(args.subList(it.nextPosition, args.size)))
@@ -24,7 +24,7 @@ fun <T> Parser<T>.tryParseToEnd(args: List<ByteString>): Either<ParseError, Pars
 
 class SkipParser(val parser: Parser<*>) : Parser<Unit> {
     override fun tryParse(
-        args: List<ByteString>,
+        args: List<RespBulkString>,
         pos: Int
     ): Either<ParseError, Parsed<Unit>> {
         return parser.tryParse(args, pos).flatMap { Right(UnitValue(it.nextPosition)) }
@@ -51,7 +51,7 @@ inline infix fun <reified A, reified B, reified C, reified D> AndParser<Tuple3<A
 
 class AndParser<out R>(val parsers: List<Parser<*>>, val transform: (List<Any?>) -> R) : Parser<R> {
     override fun tryParse(
-        args: List<ByteString>,
+        args: List<RespBulkString>,
         pos: Int
     ): Either<ParseError, Parsed<R>> {
         val results = LinkedList<Any?>()
@@ -82,7 +82,7 @@ infix fun <T> Parser<T>.or(other: Parser<T>): Parser<T> {
 infix fun <T> OrParser<T>.or(other: Parser<T>): Parser<T> = OrParser(parsers + other)
 
 class OrParser<T>(val parsers: List<Parser<T>>) : Parser<T> {
-    override fun tryParse(args: List<ByteString>, pos: Int): Either<ParseError, Parsed<T>> {
+    override fun tryParse(args: List<RespBulkString>, pos: Int): Either<ParseError, Parsed<T>> {
         val failures = LinkedList<ParseError>()
         parsers.forEach {
             it.tryParse(args, pos)
@@ -100,7 +100,7 @@ class MapParser<T, R>(
     val transform: (T) -> R
 ) : Parser<R> {
     override fun tryParse(
-        args: List<ByteString>,
+        args: List<RespBulkString>,
         pos: Int
     ): Either<ParseError, Parsed<R>> =
         parser.tryParse(args, pos)
@@ -110,7 +110,7 @@ class MapParser<T, R>(
 fun <T> optional(parser: Parser<T>): Parser<T?> = OptionalParser(parser)
 
 data class OptionalParser<T>(private val parser: Parser<T>) : Parser<T?> {
-    override fun tryParse(args: List<ByteString>, pos: Int): Either<ParseError, Parsed<T?>> =
+    override fun tryParse(args: List<RespBulkString>, pos: Int): Either<ParseError, Parsed<T?>> =
         parser.tryParse(args, pos)
             .fold({ NullValue(pos) }, { it })
             .right()
@@ -118,7 +118,7 @@ data class OptionalParser<T>(private val parser: Parser<T>) : Parser<T?> {
 
 sealed interface ParseError
 
-data class UnparsedRemainder(val remainder: List<ByteString>) : ParseError {
+data class UnparsedRemainder(val remainder: List<RespBulkString>) : ParseError {
     override fun toString() = "UnparsedRemainder: ${remainder.size} arguments"
 }
 
@@ -129,7 +129,7 @@ data class MismatchedToken(val expected: ByteString, val found: ByteString) : Pa
 
 data class AlternativesFailure(val failures: List<ParseError>) : ParseError
 
-data class UnexpectedEof(val lastToken: ByteString) : ParseError
+data class UnexpectedEof(val lastToken: RespBulkString) : ParseError
 data class WrongType(val found: ByteString, val expectedType: KClass<*>) : ParseError
 
 
