@@ -6,7 +6,6 @@ import com.softpaw.systems.resp.RespBulkString
 import com.softpaw.systems.resp.RespSimpleError
 import kotlinx.io.bytestring.ByteString
 import kotlinx.io.bytestring.encodeToByteString
-import kotlinx.io.bytestring.indices
 
 
 enum class KattisCommandType {
@@ -30,22 +29,9 @@ enum class KattisCommandType {
                 return exactMatch
             }
 
-            val result = nameToTypeMap.entries.firstOrNull { (k, _) ->
-                if (k.size != name.size) {
-                    return@firstOrNull false
-                }
-                for (i in k.indices) {
-                    val nameByte = name[i]
-                    val typeByte = k[i]
-
-                    when (nameByte) {
-                        typeByte -> continue
-                        in 'a'.code.toByte()..'z'.code.toByte() if nameByte - 32 == typeByte.toInt() -> continue
-                        else -> return@firstOrNull false
-                    }
-                }
-                true
-            }?.value
+            val result = nameToTypeMap
+                .entries
+                .firstOrNull { (k, _) -> k.caseInsensitiveMatchLeftAlwaysUppercase(name) }?.value
             return result
         }
     }

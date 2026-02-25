@@ -1,6 +1,8 @@
 package com.softpaw.systems.resp
 
+import arrow.core.Either
 import kotlinx.io.bytestring.ByteString
+import kotlinx.io.bytestring.decodeToString
 import kotlinx.io.bytestring.encodeToByteString
 
 sealed class RespValue<T> {
@@ -44,6 +46,11 @@ data class RespBulkString(override val value: ByteString) : RespValue<ByteString
     constructor(string: String) : this(string.encodeToByteString())
 
     val size get() = value.size
+    val str by lazy { value.decodeToString() }
+    fun asInteger(): Either<RespSimpleError, Long> {
+        return str.toLongOrNull()?.let { Either.Right(it) }
+            ?: Either.Left(RespSimpleError("ERR wrong integer format"))
+    }
 }
 
 data class RespArray(override val value: List<RespValue<*>>) : RespValue<List<RespValue<*>>>() {
@@ -62,6 +69,11 @@ data class RespArray(override val value: List<RespValue<*>>) : RespValue<List<Re
             0, 1 -> null
             else -> value.subList(1, value.size)
         }
+    }
+    fun tail(): List<RespValue<*>> = tailOrNull() ?: emptyList()
+
+    fun isAllBulkStrings(): Boolean {
+        return value.all { it is RespBulkString }
     }
 
 }
