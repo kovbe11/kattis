@@ -1,5 +1,7 @@
 package com.softpaw.systems.store
 
+import com.softpaw.systems.command.Expiry
+import com.softpaw.systems.command.OnlySetIf
 import com.softpaw.systems.resp.RespValue
 import kotlinx.io.bytestring.ByteString
 import java.time.Instant
@@ -10,7 +12,15 @@ interface KeyValueGetPort {
 }
 
 interface KeyValueSetPort {
-    fun set(key: ByteString, value: RespValue<*>)
+    fun set(key: ByteString, value: RespValue<*>, onlySetIf: OnlySetIf? = null, expiry: Expiry? = null)
+
+    // todo: onlysetif and expiry should be coming from low.. maybe? low level is depending on high level here
+    fun setThenGet(
+        key: ByteString,
+        value: RespValue<*>,
+        onlySetIf: OnlySetIf? = null,
+        expiry: Expiry? = null
+    ): RespValue<*>?
 }
 
 interface KeyValueDeletePort {

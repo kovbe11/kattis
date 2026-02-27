@@ -1,5 +1,6 @@
 package com.softpaw.systems.store
 
+import com.softpaw.systems.command.*
 import com.softpaw.systems.resp.RespValue
 import kotlinx.io.bytestring.ByteString
 import java.time.Clock
@@ -40,8 +41,45 @@ class BasicKeyValueStore(
         return result.value
     }
 
-    override fun set(key: ByteString, value: RespValue<*>) {
-        map[key] = StoreValue(value)
+    private fun setIf(onlySetIf: OnlySetIf?, oldValue: RespValue<*>? = null): Boolean {
+        return when (onlySetIf) {
+            null -> true
+            OnlySetIfItDoesNotExist -> oldValue == null
+            OnlySetIfItExists -> oldValue != null
+            is OnlySetIfEqualToValue -> onlySetIf.value == oldValue // todo: this logic actually falls apart if we start saving types :/
+            is OnlySetIfNotEqualToValue -> onlySetIf.value != oldValue
+        }
+    }
+
+    private fun expiringAt(expiry: Expiry?, oldValue: StoreValue?): Instant? {
+        return when (expiry) {
+            null -> null
+            KeepTtl -> oldValue?.expires
+            is ExpireAfter -> clock.instant().plusSeconds(expiry.seconds)
+        }
+    }
+
+    override fun set(key: ByteString, value: RespValue<*>, onlySetIf: OnlySetIf?, expiry: Expiry?) {
+        setThenGet(key, value, onlySetIf, expiry)
+    }
+
+    override fun setThenGet(
+        key: ByteString,
+        value: RespValue<*>,
+        onlySetIf: OnlySetIf?,
+        expiry: Expiry?
+    ): RespValue<*>? {
+        var expiringNeeded = false
+        map.compute(key) { _, v ->
+            if (!setIf(onlySetIf, v?.value)) return@compute v
+            val expiresAt = expiringAt(expiry, v)
+            expiresAt?.run { expiringNeeded = true }
+            (StoreValue(value, expiringAt(expiry, v)))
+        }
+        if (expiringNeeded) {
+            expiringKeysSet.offer(key)
+        }
+        return map[key]?.value
     }
 
     override fun delete(key: ByteString): Boolean {
